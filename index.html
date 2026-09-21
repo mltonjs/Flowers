@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<!-- DEDICA:META -->
+<title>Para Nicol</title>
+<meta name="description" content="Una galaxia sencilla con agujero negro, anillo dorado y fotos flotando entre frases del Día de las Flores Amarillas.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌻</text></svg>">
+<!-- DEDICA:PRELOAD -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+<style>
+ 
+  *{box-sizing:border-box;}
+  html, body { margin:0; height:100%; background:#000; overflow:hidden; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  canvas { display:block; }
+
+  #main-title{
+    position:fixed;top:40px;left:0;right:0;width:100%;
+    font-size:2.6em;color:#FFFACD;white-space:nowrap;
+    text-shadow:0 0 10px #FFD700,0 0 18px #FFA500;
+    z-index:10;pointer-events:none;text-align:center;
+    font-family:'Indie Flower','Bradley Hand','Segoe Script',cursive;
+  }
+  @media (max-width:768px){
+    #main-title{font-size:1.55em;top:22px;white-space:normal;padding:0 10px;line-height:1.15;}
+  }
+
+  #start-screen{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:#000;display:flex;justify-content:center;align-items:center;
+    flex-direction:column;color:#fff;z-index:9999;padding:20px;cursor:pointer;
+    transition:opacity .7s ease,visibility .7s ease;
+  }
+  #start-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+  #start-heart{
+    font-size:clamp(74px,23vmin,148px);line-height:1;display:block;
+    filter:drop-shadow(0 0 14px rgba(255,215,0,.75)) drop-shadow(0 0 36px rgba(255,165,0,.38)) drop-shadow(0 0 66px rgba(218,165,32,.22));
+    animation:latido 1.35s ease-in-out infinite;transform-origin:50% 55%;
+  }
+  @keyframes latido{
+    0%,100%{transform:scale(1);}
+    12%{transform:scale(1.15);}
+    24%{transform:scale(1);}
+    36%{transform:scale(1.07);}
+    50%{transform:scale(1);}
+  }
+  #start-text{
+    font-size:1.8em;color:#FFFACD;font-family:'Indie Flower','Bradley Hand','Segoe Script',cursive;
+    text-shadow:0 0 7px #FFD700;text-align:center;
+    margin-top:clamp(16px,3.5vh,28px);
+    animation:parpadeo 2.2s ease-in-out infinite;
+  }
+  @keyframes parpadeo{0%,100%{opacity:.55;}50%{opacity:1;}}
+  @media (prefers-reduced-motion:reduce){
+    #start-heart,#start-text{animation:none;}
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<h1 id="main-title"></h1>
+
+<div id="start-screen">
+  <div id="start-heart" aria-hidden="true">🌻</div>
+  <div id="start-text">Toca para iniciar</div>
+</div>
+
+<audio id="audio" loop>
+  <source src="assets/musica.mp3" type="audio/mpeg">
+</audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.148.0/build/three.min.js"></script>
+
+<!-- DEDICA:CONFIG -->
+<script>
+const DEFAULTS = {
+  titulo: "Feliz Día de las Flores Amarillas Mi Nico 🌻",
+  frases: [
+        "🌻 Para mi Nico, una flor con mucho cariño",
+        "🌼 Hoy las flores amarillas tienen tu nombre, Nico",
+        "🌻 Mi Nico, que nunca te falten motivos para sonreír",
+        "🌼 Un girasol para mi Nico, porque sí 💛",
+        "🌻 Nico, hoy te toca recibir un poquito de sol",
+        "🌼 Para mi Nico, que siempre merece algo bonito",
+        "🌻 Mi Nico, esta flor es pequeña, pero el cariño es grande",
+        "🌼 Un detalle amarillo para alguien muy especial",
+        "🌻 Nico, que este día te regale muchas sonrisas",
+        "🌼 Hoy florecen los buenos deseos para mi Nico",
+        "🌻 Mi Nico, gracias por tantos momentos bonitos",
+        "🌼 Una flor para recordarte lo mucho que vales",
+        "🌻 Nico, que siempre encuentres un motivo para seguir brillando",
+        "🌼 Para mi Nico, con una sonrisa y un girasol",
+        "🌻 Mi Nico, que nunca te falte gente que te quiera bonito",
+        "🌼 Hoy el amarillo lleva tu nombre, Nicol",
+        "🌻 Nico, un girasol para alegrarte un poquito el día",
+        "🌼 Porque mi Nico también merece flores amarillas",
+        "🌻 Mi Nico, que la vida siempre te encuentre sonriendo",
+        "🌼 Un pequeño detalle para una gran persona",
+        "🌻 Nico, gracias por estar en tantos momentos",
+        "🌼 Para mi Nico, un poquito de luz en forma de flor",
+        "🌻 Mi Nico, que bonito coincidir contigo en esta vida",
+        "🌼 Hoy quiero regalarte una sonrisa amarilla 🌻",
+        "🌻 Nico, que nunca pierdas esa forma tan tuya de ser",
+        "🌼 Una flor para mi Nico y un abrazo de regalo",
+        "🌻 Mi Nico, porque las personas bonitas también reciben flores",
+        "🌼 Que este girasol te recuerde que eres importante",
+        "🌻 Nico, hoy simplemente quería hacerte sonreír",
+        "🌼 Para mi Nico, porque un día amarillo siempre viene bien",
+        "🌻 Mi Nico, gracias por hacer más bonitos algunos días",
+        "🌼 Que nunca te falten razones para florecer",
+        "🌻 Nico, esta flor viaja con un montón de cariño",
+        "🌼 Mi Nico, hoy el sol viene en forma de girasol",
+        "🌻 Una flor amarilla para mi persona favorita de hoy",
+        "🌼 Nico, que todo lo bonito te encuentre en el camino",
+        "🌻 Mi Nico, por todos los momentos que todavía nos faltan vivir",
+        "🌼 Un girasol para alguien que hace especial lo cotidiano",
+        "🌻 Nico, que tengas un día tan bonito como tú",
+        "🌼 Mi Nico, hoy toca celebrar tu existencia 🌻",
+        "🌻 Para Nicol, pero siempre será mi Nico 💛",
+        "🌼 Nico, un detalle sencillo para decirte: gracias por estar",
+        "🌻 Mi Nico, que esta flor te saque aunque sea una pequeña sonrisa",
+        "🌼 Porque sí, porque eres tú y porque hoy hay flores amarillas",
+        "🌻 Nico, que la vida te devuelva toda la alegría que das",
+        "🌼 Mi Nico, una flor, un abrazo y buenos deseos",
+        "🌻 Hoy no hay mucha explicación: vi flores y pensé en ti",
+        "🌼 Nico, algunas personas simplemente merecen un girasol",
+        "🌻 Mi Nico, que siempre tengas un poquito de sol en tus días",
+        "🌼 Una flor amarilla para acompañar tus mejores momentos",
+        "🌻 Nico, hoy quiero que recuerdes que cuentas mucho",
+        "🌼 Mi Nico, que nunca te falte alguien que te diga: aquí estoy",
+        "🌻 Un girasol para mi Nico, porque los buenos amigos también florecen",
+        "🌼 Nico, gracias por cada risa y cada momento compartido",
+        "🌻 Mi Nico, que este pequeño detalle te alegre el corazón",
+        "🌼 Hoy el día se pinta de amarillo especialmente para ti",
+        "🌻 Nico, que sigamos acumulando buenos recuerdos",
+        "🌼 Mi Nico, un girasol para celebrar nuestra amistad",
+        "🌻 Que bonito tener un Nico como tú en mi vida",
+        "🌼 Nico, esta flor lleva un poquito de todo mi cariño",
+        "🌻 Mi Nico, que nunca se apague esa luz que tienes",
+        "🌼 Hoy florecen los buenos recuerdos y las nuevas historias",
+        "🌻 Nico, un pequeño girasol para una gran amistad",
+        "🌼 Mi Nico, porque los detalles simples también dicen mucho",
+        "🌻 Que este 21 de septiembre te encuentre feliz",
+        "🌼 Nico, hoy te mando flores aunque sea a la distancia",
+        "🌻 Mi Nico, que nunca falten motivos para celebrar",
+        "🌼 Una flor para mi Nico y un abrazo enorme",
+        "🌻 Nico, gracias por ser parte de mis días",
+        "🌼 Mi Nico, hoy simplemente quería recordarte que importas",
+        "🌻 Feliz Día de las Flores Amarillas, mi Nico 🌻💛"
+  ],
+  fotos: ["assets/img1.png","assets/img2.png","assets/img3.png"],
+  musica: "assets/musica.mp3"
+};
+const CONFIG=(window.DEDICA&&window.DEDICA.merge)?window.DEDICA.merge(DEFAULTS,window.DEDICA.config):DEFAULTS;
+</script>
+
+<script>
+// ================= Título fijo + música (arranca recién al tocar) =================
+document.getElementById('main-title').textContent=CONFIG.titulo;
+const audio=document.getElementById('audio');
+audio.querySelector('source').src=CONFIG.musica;
+audio.load();
+
+// ================= Escena =================
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setSize(innerWidth,innerHeight);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,5000);
+let targetDist=300,currentDist=300,rotX=0.2,rotY=0;
+
+// Fondo: negro solido + el campo de estrellas generado abajo. La textura
+// de nebulosa externa que traia el archivo original apuntaba a una URL de
+// GitHub que ya no existe (404 - nunca se veia, ni siquiera antes de este
+// cambio) - se quita en vez de dejar una dependencia externa rota.
+
+// Estrellas
+(function makeStars(count=2000,spread=3000){
+  const g=new THREE.BufferGeometry();
+  const pos=new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+    const r=spread*(0.3+Math.random()*0.7);
+    const th=Math.random()*Math.PI*2;
+    const ph=Math.acos(2*Math.random()-1);
+    pos[i*3+0]=r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1]=r*Math.cos(ph);
+    pos[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.5,color:0xffffff,depthWrite:false})));
+})();
+
+// Núcleo tipo "agujero negro" (oscuro y opaco, para que el anillo resalte por contraste)
+const coreMat=new THREE.MeshPhongMaterial({color:0x030303,transparent:true,opacity:0.92,shininess:30});
+const core=new THREE.Mesh(new THREE.SphereGeometry(40,64,64),coreMat);
+scene.add(core);
+
+// El título ahora vive en la cabecera fija (#main-title, ver DEDICA:CONFIG
+// mas arriba) en vez de un sprite 3D en el centro - mas legible y
+// consistente con el resto del catalogo.
+
+// Glow exterior (reducido, para que el anillo se note más)
+const GLOW_BASE=360;
+function makeGlow(size=768,c1='255,235,130',c2='255,180,0'){
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const g=c.getContext('2d');
+  const grad=g.createRadialGradient(size/2,size/2,size*0.05,size/2,size/2,size*0.5);
+  grad.addColorStop(0,'rgba('+c1+',0.55)');
+  grad.addColorStop(0.5,'rgba('+c2+',0.25)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grad;g.fillRect(0,0,size,size);
+  return new THREE.CanvasTexture(c);
+}
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:makeGlow(),transparent:true,depthWrite:false}));
+glow.scale.set(GLOW_BASE,GLOW_BASE,1);
+scene.add(glow);
+
+// Anillo único (antes eran 3 anillos separados con huecos reales entre
+// ellos). Sigue siendo un solo disco continuo (42-116, sin huecos), pero
+// ahora con textura de franjas finas superpuestas al degradado de base -
+// como los anillos de Saturno, que se ven "en capas" por dentro sin
+// separarse en piezas distintas.
+function ringTexture(size=1024){
+  const c=document.createElement('canvas');c.width=c.height=size;
+  const g=c.getContext('2d');g.translate(size/2,size/2);
+  const rInner=size*0.205,rOuter=size*0.49;
+  // Base: un solo degradado continuo de borde a borde, sin apagarse hacia
+  // el borde exterior, para que el anillo se vea denso y solido.
+  const grd=g.createRadialGradient(0,0,rInner,0,0,rOuter);
+  grd.addColorStop(0.00,'rgba(255,255,245,1)');
+  grd.addColorStop(0.30,'rgba(255,235,120,1)');
+  grd.addColorStop(0.65,'rgba(255,200,40,0.95)');
+  grd.addColorStop(1.00,'rgba(255,160,0,0.85)');
+  g.fillStyle=grd;
+  g.beginPath();g.arc(0,0,rOuter,0,Math.PI*2);g.arc(0,0,rInner,0,Math.PI*2,true);g.closePath();g.fill();
+
+  // Franjas concentricas finas por encima del degradado base - varian el
+  // brillo (mas claras u oscuras), nunca la opacidad hasta 0, asi que no
+  // dejan huecos ni se leen como anillos separados, solo como textura.
+  const bandCount=26;
+  for(let i=0;i<bandCount;i++){
+    const r=rInner+(rOuter-rInner)*(i/(bandCount-1));
+    const dark=i%3===0;
+    g.beginPath();
+    g.arc(0,0,r,0,Math.PI*2);
+    g.lineWidth=(rOuter-rInner)/bandCount*(0.55+Math.random()*0.35);
+    g.strokeStyle=dark?'rgba(110,60,0,0.20)':'rgba(255,255,225,0.16)';
+    g.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+const ring=new THREE.Mesh(new THREE.RingGeometry(42,116,160),new THREE.MeshBasicMaterial({map:ringTexture(),transparent:true,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,opacity:1}));
+ring.rotation.x=Math.PI/2;
+scene.add(ring);
+
+// Palabras alrededor: frases del Día de las Flores Amarillas (min 1, se repiten
+// ciclicamente hasta llenar las 150 posiciones que la escena ya reserva,
+// sin importar cuántas haya dejado el cliente - ver schema.json).
+const frasesBase=(Array.isArray(CONFIG.frases)&&CONFIG.frases.length)?CONFIG.frases:DEFAULTS.frases;
+const WORD_SLOTS=150;
+const WORDS=Array.from({length:WORD_SLOTS},(_,i)=>frasesBase[i%frasesBase.length]);
+function makeTextTexture(text, color){
+  const padding = 40;
+  const maxCanvasWidth = 1400;
+  const canvasHeight = 180;
+
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let fontSize = 60;
+  let font = `${fontSize}px 'Indie Flower', cursive`;
+
+  ctx.font = font;
+
+  // Reducir la letra hasta que toda la frase entre
+  while (
+    ctx.measureText(text).width > maxCanvasWidth - padding * 2 &&
+    fontSize > 24
+  ) {
+    fontSize -= 2;
+    ctx.font = `${fontSize}px 'Indie Flower', cursive`;
+  }
+
+  const textWidth = ctx.measureText(text).width;
+
+  // El canvas se adapta al texto
+  c.width = Math.min(
+    Math.ceil(textWidth + padding * 2),
+    maxCanvasWidth
+  );
+
+  c.height = canvasHeight;
+
+  // Después de cambiar el tamaño del canvas hay que volver a configurar el contexto
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${fontSize}px 'Indie Flower', cursive`;
+
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 30;
+
+  ctx.fillText(
+    text,
+    c.width / 2,
+    c.height / 2
+  );
+
+  return new THREE.CanvasTexture(c);
+}
+const COLORS=['#ffd700','#ffe066','#ffcc33','#ffb347','#fff2b0','#ffaa00','#f4c430','#e6b800','#ffdb58','#f0c419'];
+const textGroup=new THREE.Group();scene.add(textGroup);
+// Se espera a que 'Indie Flower' termine de cargar antes de dibujar las
+// frases en canvas - a diferencia del texto normal del DOM (el navegador ya
+// resuelve el "parpadeo" de fuente por su cuenta), un canvas dibuja con la
+// fuente que este disponible EN ESE INSTANTE: sin esto, las 150 frases
+// quedaban grabadas para siempre con la tipografia de respaldo (Arial) si
+// la fuente todavia no habia terminado de bajar en el momento exacto en que
+// corria este bucle.
+document.fonts.load("40px 'Indie Flower'").catch(()=>{}).then(()=>{
+  for(let i=0;i<WORDS.length;i++){
+    const tex=makeTextTexture(WORDS[i],COLORS[i%COLORS.length]);
+    const mat=new THREE.SpriteMaterial({map:tex,transparent:true});
+    const sp=new THREE.Sprite(mat);
+    sp.scale.set(68,21.8,1);
+    const phi=Math.acos(2*Math.random()-1);const theta=Math.random()*Math.PI*2;
+    const r=150+Math.random()*120;
+    sp.position.set(r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
+    sp.userData={phi:phi,theta:theta,radius:r,speed:0.001+Math.random()*0.001};
+    textGroup.add(sp);
+  }
+});
+
+// Fotos del cliente flotando de forma individual (reemplazan a los emojis de
+// la version original). Minimo 1, maximo 3 (plantilla gratuita, ver
+// schema.json) - se reparten ciclicamente (i % cantidad) entre las 26
+// posiciones fijas que la escena ya reserva, igual que antes hacian los
+// emojis, asi que menos fotos simplemente se repiten mas seguido sin que la
+// escena se vea mas vacia.
+const fotosBase=(Array.isArray(CONFIG.fotos)&&CONFIG.fotos.length)?CONFIG.fotos:DEFAULTS.fotos;
+function makePhotoSprite(url,size){
+  const c=document.createElement('canvas');c.width=c.height=256;
+  const tex=new THREE.CanvasTexture(c);
+  const mat=new THREE.SpriteMaterial({map:tex,transparent:true});
+  const sp=new THREE.Sprite(mat);
+  sp.scale.set(size,size,1);
+  const img=new Image();img.crossOrigin='anonymous';
+  img.onload=()=>{
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    // "contain": la foto entra completa sin recortar ningun borde (lo que
+    // sobra en el lienzo cuadrado queda transparente); el sprite se encoge
+    // en el eje sobrante para que no se note como un marco cuadrado vacio.
+    const s=Math.min(c.width/img.width,c.height/img.height);
+    ctx.drawImage(img,(c.width-img.width*s)/2,(c.height-img.height*s)/2,img.width*s,img.height*s);
+    tex.needsUpdate=true;
+    const aspect=img.naturalWidth/img.naturalHeight;
+    const aX=Math.min(1,aspect),aY=Math.min(1,1/aspect);
+    sp.scale.set(size*aX,size*aY,1);
+  };
+  img.onerror=()=>{};
+  img.src=url;
+  return sp;
+}
+const photoGroup=new THREE.Group();scene.add(photoGroup);
+const PHOTO_COUNT=26;
+for(let i=0;i<PHOTO_COUNT;i++){
+  const url=fotosBase[i%fotosBase.length];
+  const size=28+Math.random()*20;
+  const sp=makePhotoSprite(url,size);
+  const phi=Math.acos(2*Math.random()-1);const theta=Math.random()*Math.PI*2;
+  const r=140+Math.random()*170;
+  sp.position.set(r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta));
+  sp.userData={phi:phi,theta:theta,radius:r,speed:0.0006+Math.random()*0.0012};
+  photoGroup.add(sp);
+}
+
+// Controles cámara — dirección corregida: ahora sigue el lado hacia donde deslizas
+let dragging=false,lastX=0,lastY=0;
+function onDown(e){dragging=true;const t=e.touches?e.touches[0]:e;lastX=t.clientX;lastY=t.clientY;}
+function onMove(e){if(!dragging)return;const t=e.touches?e.touches[0]:e;const dx=(t.clientX-lastX)/innerWidth;const dy=(t.clientY-lastY)/innerHeight;rotY-=dx*5;rotX=Math.max(-1.2,Math.min(1.2,rotX+dy*3.5));lastX=t.clientX;lastY=t.clientY;}
+function onUp(){dragging=false;}
+addEventListener('mousedown',onDown);addEventListener('mousemove',onMove);addEventListener('mouseup',onUp);
+addEventListener('touchstart',onDown,{passive:true});addEventListener('touchmove',onMove,{passive:true});addEventListener('touchend',onUp,{passive:true});
+addEventListener('wheel',(e)=>{targetDist+=e.deltaY*0.25;targetDist=Math.max(160,Math.min(600,targetDist));},{passive:true});
+
+// Zoom con pellizco en móviles
+let pinch=0;
+addEventListener('touchmove',(e)=>{
+  if(e.touches && e.touches.length===2){
+    e.preventDefault();
+    const dx=e.touches[0].clientX-e.touches[1].clientX;
+    const dy=e.touches[0].clientY-e.touches[1].clientY;
+    const d=Math.hypot(dx,dy);
+    if(pinch){targetDist+=(pinch-d)*0.5;targetDist=Math.max(160,Math.min(600,targetDist));}
+    pinch=d;
+  }
+},{passive:false});
+addEventListener('touchend',()=>{pinch=0;},{passive:true});
+
+// Animación
+let t=0;
+function tick(){requestAnimationFrame(tick);t+=0.01;
+  ring.rotation.z+=0.003;
+  glow.scale.set(GLOW_BASE*(1+Math.sin(t*0.4)*0.03),GLOW_BASE*(1+Math.sin(t*0.4)*0.03),1);
+  const s=1.0+0.05*Math.sin(t*3); // latido
+  core.scale.set(s,s,s);
+  textGroup.children.forEach(sp=>{
+    sp.material.opacity=0.8+0.2*Math.sin(t*2);
+    sp.userData.theta+=sp.userData.speed;
+    sp.position.x=sp.userData.radius*Math.sin(sp.userData.phi)*Math.cos(sp.userData.theta);
+    sp.position.z=sp.userData.radius*Math.sin(sp.userData.phi)*Math.sin(sp.userData.theta);
+  });
+  photoGroup.children.forEach(sp=>{
+    sp.material.opacity=0.85+0.15*Math.sin(t*2+sp.userData.radius);
+    // Sin rotacion propia: a diferencia de un emoji (simetrico, giraba bien
+    // como si fuera un pinwheel), una foto real con forma reconocible se ve
+    // rara/como "estirada" al girar sobre su propio eje en ciertos angulos -
+    // se quita, la foto solo orbita y flota, se queda siempre derecha.
+    sp.userData.theta+=sp.userData.speed;
+    sp.position.x=sp.userData.radius*Math.sin(sp.userData.phi)*Math.cos(sp.userData.theta);
+    sp.position.z=sp.userData.radius*Math.sin(sp.userData.phi)*Math.sin(sp.userData.theta);
+  });
+  currentDist+=(targetDist-currentDist)*0.06;
+  const cx=Math.cos(rotX),sx=Math.sin(rotX);const cy=Math.cos(rotY),sy=Math.sin(rotY);
+  camera.position.set(currentDist*sy*cx,currentDist*sx,currentDist*cy*cx);camera.lookAt(0,0,0);
+  renderer.render(scene,camera);
+}
+tick();
+
+// ── Arranque: la musica recien empieza cuando se toca la pantalla ──
+const startScreen=document.getElementById('start-screen');
+function startExperience(){
+  startScreen.classList.add('hidden');
+  setTimeout(()=>startScreen.style.display='none',800);
+  audio.play().catch(()=>{});
+}
+startScreen.addEventListener('click',startExperience);
+</script>
+</body>
+</html>
